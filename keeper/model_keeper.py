@@ -1,5 +1,15 @@
 from keeper.configuration_keeper import KeeperConfig
-from transformers import AutoTokenizer, AutoModel, PreTrainedModel, PretrainedConfig
+
+import torch
+from transformers import (
+    AutoTokenizer,
+    AutoConfig,
+    AutoModel,
+    PreTrainedModel, 
+    PretrainedConfig,
+    AutoModelForCausalLM
+)
+
 from typing import Dict
 import torch
 import numpy as np
