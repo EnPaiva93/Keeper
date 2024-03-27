@@ -1,8 +1,14 @@
 import os
 import json
 
+import torch
+from transformers import (
+    AutoTokenizer,
+    PreTrainedTokenizer
+)
+
 from keeper.configuration_keeper import KeeperConfig
-from transformers import PreTrainedTokenizer
+
 from typing import Optional, List, Union
 
 
