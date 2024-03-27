@@ -1,3 +1,4 @@
+from keeper.configuration_keeper import KeeperConfig
 from transformers import AutoTokenizer, AutoModel, PreTrainedModel, PretrainedConfig
 from typing import Dict
 import torch
