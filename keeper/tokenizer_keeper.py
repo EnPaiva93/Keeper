@@ -3,7 +3,7 @@ import json
 
 from keeper.configuration_keeper import KeeperConfig
 from transformers import PreTrainedTokenizer
-from typing import Optional, Union
+from typing import Optional, List, Union
 
 
 class KeeperTokenizer(PreTrainedTokenizer):
