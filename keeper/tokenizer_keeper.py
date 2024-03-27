@@ -1,6 +1,7 @@
 import os
 import json
 
+from keeper.configuration_keeper import KeeperConfig
 from transformers import PreTrainedTokenizer
 from typing import Optional, Union
 
