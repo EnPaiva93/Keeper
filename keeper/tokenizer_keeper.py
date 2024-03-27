@@ -46,12 +46,12 @@ class KeeperTokenizer(PreTrainedTokenizer):
 
         print("Loading tokenizer_retriever from", pretrained_model_name_or_path)
         instance.tokenizer_retriever = AutoTokenizer.from_pretrained(
-            os.path.join(pretrained_model_name_or_path, 'tokenizer-retriever')
+            pretrained_model_name_or_path, subfolder='tokenizer-retriever'
         )
 
         print("Loading tokenizer_model from", pretrained_model_name_or_path)
         instance.tokenizer_model = AutoTokenizer.from_pretrained(
-            os.path.join(pretrained_model_name_or_path, 'tokenizer-model')
+            pretrained_model_name_or_path, subfolder='tokenizer-model'
         )
 
         return instance
