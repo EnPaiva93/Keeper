@@ -63,9 +63,9 @@ class KeeperConfig(PretrainedConfig):
           "vocab_size": 256000
         },
         auto_map = {     
-          "AutoConfig": "keeper/configuration_keeper.KeeperConfig",     
-          "AutoTokenizer": "keeper/tokenizer_keeper.KeeperTokenizer",
-          "AutoModelForCausalLM": "keeper/model_keeper.KeeperModelForCausalLM",    
+          "AutoConfig": "https://github.com/EnPaiva93/Keeper/blob/e736bc081c73544c7fdc167f96504732f06e4935/keeper/configuration_keeper.py",     
+          "AutoModel": "https://github.com/EnPaiva93/Keeper/blob/756d32bd4e49c9cd871bc9bcabf47f6ef57eb162/keeper/tokenizer_keeper.py",
+          "AutoModelForCausalLM": "https://github.com/EnPaiva93/Keeper/blob/756d32bd4e49c9cd871bc9bcabf47f6ef57eb162/keeper/model_keeper.py",  
         },
         **kwargs,
     ):
