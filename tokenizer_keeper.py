@@ -7,7 +7,7 @@ from transformers import (
     PreTrainedTokenizer
 )
 
-from .configuration_keeper import KeeperConfig
+from configuration_keeper import KeeperConfig
 
 from typing import Optional, List, Union
 
