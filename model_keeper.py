@@ -1,4 +1,4 @@
-from keeper.configuration_keeper import KeeperConfig
+from configuration_keeper import KeeperConfig
 
 import torch
 from transformers import (
