@@ -60,14 +60,12 @@ class KeeperModelForCausalLM(PreTrainedModel):
         # self.register_buffer('document_model_type', torch.empty(0, dtype=torch.long))
         self.register_buffer('prompt_left', torch.empty(0, dtype=torch.long))
         self.register_buffer('prompt_right', torch.empty(0, dtype=torch.long))
+        self.register_buffer('respuesta', torch.empty(0, dtype=torch.long))
 
     def generate(self, query: Dict[str, torch.LongTensor], k: int = 3, **kwargs):
 
         query_retriever = {k: v.to("cuda") for k, v in query['tokens_retriever'].items()}
         query_model = {k: v.to("cuda") for k, v in query['tokens_model'].items()}
-
-        resp = tokenizer.encode('\nRespuesta: ')
-        resp_model = {k: v.to("cuda") for k, v in resp['tokens_model'].items()}
 
         query_vecs = self.forward_representation(query_retriever)
 
@@ -85,7 +83,7 @@ class KeeperModelForCausalLM(PreTrainedModel):
 
         concatenated_texts = torch.cat(topk_texts, dim=0)
 
-        T = torch.cat((self.prompt_left, concatenated_texts.unsqueeze(0), self.prompt_right, query_model['input_ids'], resp_model['input_ids']), dim=1)
+        T = torch.cat((self.prompt_left, concatenated_texts.unsqueeze(0), self.prompt_right, query_model['input_ids'], self.respuesta), dim=1)
 
         outputs = self.llm.generate(input_ids=T, max_new_tokens=256, repetition_penalty=1.15)
 
@@ -156,6 +154,10 @@ Pregunta: """
         # Tokenizamos el documento
         doc_outputs = tokenizer.encode(docs, max_length=max_seq_len, padding='max_length', truncation=True)
 
+        # Tokenizamos la Respuesta
+        resp = tokenizer.encode('\nRespuesta: ')
+        resp_model = {k: v.to("cuda") for k, v in resp['tokens_model'].items()}
+
         # Pasamos los tensores a cuda  (## optimizar: se guardan tensores que no se utilizaran en la gpu)
         doc_outputs = {k: v.to("cuda") for k, v in doc_outputs.items()}
         prompt_left_output = {k: v.to("cuda") for k, v in prompt_left_output.items()}
@@ -170,3 +172,4 @@ Pregunta: """
         # self.document_model_type = key_outputs['tokens_model']['token_type_ids']
         self.prompt_left = prompt_left_output['tokens_model']['input_ids']
         self.prompt_right = prompt_right_output['tokens_model']['input_ids']
+        self.respuesta = resp_model['tokens_model']['input_ids']
