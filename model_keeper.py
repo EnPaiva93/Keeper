@@ -7,7 +7,8 @@ from transformers import (
     AutoModel,
     PreTrainedModel, 
     PretrainedConfig,
-    AutoModelForCausalLM
+    AutoModelForCausalLM,
+    BitsAndBytesConfig
 )
 
 from typing import Dict
@@ -34,10 +35,19 @@ class KeeperModelForCausalLM(PreTrainedModel):
             # Inicialización con configuración
 
             self.bert = AutoModel.from_pretrained(cfg.retriever_config['_name_or_path'])
+
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_compute_dtype=torch.bfloat16
+            )
+
             self.llm = AutoModelForCausalLM.from_pretrained(
                 cfg.model_config['_name_or_path'],
-                device_map=cfg.device_map
-                )
+                device_map=cfg.device_map,
+                torch_dtype=torch.bfloat16,
+                quantization_config=bnb_config
+            )
 
             # Almacena kwargs para la serialización y carga futura
             # self.init_kwargs = {'cfg': cfg}
@@ -85,13 +95,15 @@ class KeeperModelForCausalLM(PreTrainedModel):
 
         T = torch.cat((self.prompt_left, concatenated_texts.unsqueeze(0), self.prompt_right, query_model['input_ids'], self.respuesta), dim=1)
 
+        prompt_length = T.shape[1]
+
         outputs = self.llm.generate(input_ids=T, max_new_tokens=256, repetition_penalty=1.15)
 
-        return outputs
+        return outputs[0][prompt_length:].unsqueeze(0)
 
     def forward_representation(self,
                                tokens,
-                               max_seq_len = 512,
+                               max_seq_len = 128,
                                sequence_type=None) -> torch.Tensor:
 
         if sequence_type == "doc":
@@ -132,7 +144,8 @@ class KeeperModelForCausalLM(PreTrainedModel):
 
     def prompt(self, left_p = None, right_p = None):
         if left_p is None:
-          left_p = """ Eres un experto en cultura paraguaya que responde segun el contexto:
+          left_p = """ <bos><start_of_turn>user 
+          Eres un experto en cultura paraguaya que responde segun el contexto:
 -------------------------------
 """
         if right_p is None:
@@ -145,7 +158,7 @@ class KeeperModelForCausalLM(PreTrainedModel):
 Pregunta: """
         return left_p, right_p
 
-    def save_docs(self, docs: list, tokenizer, max_seq_len=512):
+    def save_docs(self, docs: list, tokenizer, max_seq_len=128):
         # Tokenizamos el prompt
         prompt_left, prompt_right = self.prompt()
         prompt_left_output = tokenizer.encode(prompt_left)
@@ -154,14 +167,16 @@ Pregunta: """
         # Tokenizamos el documento
         doc_outputs = tokenizer.encode(docs, max_length=max_seq_len, padding='max_length', truncation=True)
 
-        # Tokenizamos la Respuesta
-        resp = tokenizer.encode('\nRespuesta: ')
-        resp_model = {k: v.to("cuda") for k, v in resp['tokens_model'].items()}
-
         # Pasamos los tensores a cuda  (## optimizar: se guardan tensores que no se utilizaran en la gpu)
         doc_outputs = {k: v.to("cuda") for k, v in doc_outputs.items()}
         prompt_left_output = {k: v.to("cuda") for k, v in prompt_left_output.items()}
         prompt_right_output = {k: v.to("cuda") for k, v in prompt_right_output.items()}
+
+        # Tokenizamos la Respuesta
+        resp = tokenizer.encode("""
+Respuesta: <end_of_turn>
+        <start_of_turn>model """)
+        resp_model = {k: v.to("cuda") for k, v in resp['tokens_model'].items()}
 
         # Actualizar el buffer con los vectores de documentos
         self.document_retriever_text = doc_outputs['tokens_retriever']['input_ids']
@@ -172,4 +187,5 @@ Pregunta: """
         # self.document_model_type = key_outputs['tokens_model']['token_type_ids']
         self.prompt_left = prompt_left_output['tokens_model']['input_ids']
         self.prompt_right = prompt_right_output['tokens_model']['input_ids']
-        self.respuesta = resp_model['tokens_model']['input_ids']
+        self.respuesta = resp_model['input_ids']
+
